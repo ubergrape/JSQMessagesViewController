@@ -34,85 +34,14 @@
 #import "JSQMessagesInputToolbar.h"
 #import "JSQMessagesComposerTextView.h"
 
+#import "JSQMessagesTimestampFormatter.h"
+
 #import "NSString+JSQMessages.h"
 #import "UIColor+JSQMessages.h"
 #import "UIDevice+JSQMessages.h"
 #import "NSBundle+JSQMessages.h"
 
-#import <objc/runtime.h>
-
-
-// Fixes rdar://26295020
-// See issue #1247 and Peter Steinberger's comment:
-// https://github.com/jessesquires/JSQMessagesViewController/issues/1247#issuecomment-219386199
-// Gist with workaround: https://gist.github.com/steipete/b00fc02aa9f1c66c11d0f996b1ba1265
-// Forgive me
-static IMP JSQReplaceMethodWithBlock(Class c, SEL origSEL, id block) {
-    NSCParameterAssert(block);
-
-    // get original method
-    Method origMethod = class_getInstanceMethod(c, origSEL);
-    NSCParameterAssert(origMethod);
-
-    // convert block to IMP trampoline and replace method implementation
-    IMP newIMP = imp_implementationWithBlock(block);
-
-    // Try adding the method if not yet in the current class
-    if (!class_addMethod(c, origSEL, newIMP, method_getTypeEncoding(origMethod))) {
-        return method_setImplementation(origMethod, newIMP);
-    } else {
-        return method_getImplementation(origMethod);
-    }
-}
-
-static void JSQInstallWorkaroundForSheetPresentationIssue26295020(void) {
-    __block void (^removeWorkaround)(void) = ^{};
-    const void (^installWorkaround)(void) = ^{
-        const SEL presentSEL = @selector(presentViewController:animated:completion:);
-        __block IMP origIMP = JSQReplaceMethodWithBlock(UIViewController.class, presentSEL, ^(UIViewController *self, id vC, BOOL animated, id completion) {
-            UIViewController *targetVC = self;
-            while (targetVC.presentedViewController) {
-                targetVC = targetVC.presentedViewController;
-            }
-            ((void (*)(id, SEL, id, BOOL, id))origIMP)(targetVC, presentSEL, vC, animated, completion);
-        });
-        removeWorkaround = ^{
-            Method origMethod = class_getInstanceMethod(UIViewController.class, presentSEL);
-            NSCParameterAssert(origMethod);
-            class_replaceMethod(UIViewController.class,
-                                presentSEL,
-                                origIMP,
-                                method_getTypeEncoding(origMethod));
-        };
-    };
-
-    const SEL presentSheetSEL = NSSelectorFromString(@"presentSheetFromRect:");
-    const void (^swizzleOnClass)(Class k) = ^(Class klass) {
-        const __block IMP origIMP = JSQReplaceMethodWithBlock(klass, presentSheetSEL, ^(id self, CGRect rect) {
-            // Before calling the original implementation, we swizzle the presentation logic on UIViewController
-            installWorkaround();
-            // UIKit later presents the sheet on [view.window rootViewController];
-            // See https://github.com/WebKit/webkit/blob/1aceb9ed7a42d0a5ed11558c72bcd57068b642e7/Source/WebKit2/UIProcess/ios/WKActionSheet.mm#L102
-            // Our workaround forwards this to the topmost presentedViewController instead.
-            ((void (*)(id, SEL, CGRect))origIMP)(self, presentSheetSEL, rect);
-            // Cleaning up again - this workaround would swallow bugs if we let it be there.
-            removeWorkaround();
-        });
-    };
-
-    // _UIRotatingAlertController
-    Class alertClass = NSClassFromString([NSString stringWithFormat:@"%@%@%@", @"_U", @"IRotat", @"ingAlertController"]);
-    if (alertClass) {
-        swizzleOnClass(alertClass);
-    }
-
-    // WKActionSheet
-    Class actionSheetClass = NSClassFromString([NSString stringWithFormat:@"%@%@%@", @"W", @"KActio", @"nSheet"]);
-    if (actionSheetClass) {
-        swizzleOnClass(actionSheetClass);
-    }
-}
-
+#import <MobileCoreServices/UTCoreTypes.h>
 
 
 static void * kJSQMessagesKeyValueObservingContext = &kJSQMessagesKeyValueObservingContext;
@@ -120,7 +49,7 @@ static void * kJSQMessagesKeyValueObservingContext = &kJSQMessagesKeyValueObserv
 
 
 @interface JSQMessagesViewController () <JSQMessagesInputToolbarDelegate,
-JSQMessagesKeyboardControllerDelegate>
+                                         JSQMessagesKeyboardControllerDelegate>
 
 @property (weak, nonatomic) IBOutlet JSQMessagesCollectionView *collectionView;
 @property (weak, nonatomic) IBOutlet JSQMessagesInputToolbar *inputToolbar;
@@ -158,13 +87,6 @@ JSQMessagesKeyboardControllerDelegate>
                                           bundle:[NSBundle bundleForClass:[JSQMessagesViewController class]]];
 }
 
-+ (void)initialize {
-    [super initialize];
-    if (self == [JSQMessagesViewController self]) {
-        JSQInstallWorkaroundForSheetPresentationIssue26295020();
-    }
-}
-
 #pragma mark - Initialization
 
 - (void)jsq_configureMessagesViewController
@@ -180,9 +102,6 @@ JSQMessagesKeyboardControllerDelegate>
 
     self.inputToolbar.delegate = self;
     self.inputToolbar.contentView.textView.placeHolder = [NSBundle jsq_localizedStringForKey:@"new_message"];
-
-    self.inputToolbar.contentView.textView.accessibilityLabel = [NSBundle jsq_localizedStringForKey:@"new_message"];
-
     self.inputToolbar.contentView.textView.delegate = self;
 
     self.automaticallyScrollsToMostRecentMessage = YES;
@@ -277,7 +196,6 @@ JSQMessagesKeyboardControllerDelegate>
     NSParameterAssert(self.senderDisplayName != nil);
 
     [super viewWillAppear:animated];
-    self.toolbarHeightConstraint.constant = self.inputToolbar.preferredDefaultHeight;
     [self.view layoutIfNeeded];
     [self.collectionView.collectionViewLayout invalidateLayout];
 
@@ -317,6 +235,11 @@ JSQMessagesKeyboardControllerDelegate>
     [self.keyboardController endListeningForKeyboard];
 }
 
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    NSLog(@"MEMORY WARNING: %s", __PRETTY_FUNCTION__);
+}
 
 #pragma mark - View rotation
 
@@ -420,8 +343,6 @@ JSQMessagesKeyboardControllerDelegate>
     if (self.automaticallyScrollsToMostRecentMessage && ![self jsq_isMenuVisible]) {
         [self scrollToBottomAnimated:animated];
     }
-
-    UIAccessibilityPostNotification(UIAccessibilityAnnouncementNotification, [NSBundle jsq_localizedStringForKey:@"new_message_received_accessibility_announcement"]);
 }
 
 - (void)scrollToBottomAnimated:(BOOL)animated
@@ -430,19 +351,9 @@ JSQMessagesKeyboardControllerDelegate>
         return;
     }
 
-    NSIndexPath *lastCell = [NSIndexPath indexPathForItem:([self.collectionView numberOfItemsInSection:0] - 1) inSection:0];
-    [self scrollToIndexPath:lastCell animated:animated];
-}
+    NSInteger items = [self.collectionView numberOfItemsInSection:0];
 
-
-- (void)scrollToIndexPath:(NSIndexPath *)indexPath animated:(BOOL)animated
-{
-    if ([self.collectionView numberOfSections] <= indexPath.section) {
-        return;
-    }
-
-    NSInteger numberOfItems = [self.collectionView numberOfItemsInSection:indexPath.section];
-    if (numberOfItems == 0) {
+    if (items == 0) {
         return;
     }
 
@@ -458,20 +369,18 @@ JSQMessagesKeyboardControllerDelegate>
         return;
     }
 
-    NSInteger item = MAX(MIN(indexPath.item, numberOfItems - 1), 0);
-    indexPath = [NSIndexPath indexPathForItem:item inSection:0];
-
     //  workaround for really long messages not scrolling
     //  if last message is too long, use scroll position bottom for better appearance, else use top
     //  possibly a UIKit bug, see #480 on GitHub
-    CGSize cellSize = [self.collectionView.collectionViewLayout sizeForItemAtIndexPath:indexPath];
-    CGFloat maxHeightForVisibleMessage = CGRectGetHeight(self.collectionView.bounds)
-                                         - self.collectionView.contentInset.top
-                                         - self.collectionView.contentInset.bottom
-                                         - CGRectGetHeight(self.inputToolbar.bounds);
-    UICollectionViewScrollPosition scrollPosition = (cellSize.height > maxHeightForVisibleMessage) ? UICollectionViewScrollPositionBottom : UICollectionViewScrollPositionTop;
+    NSUInteger finalRow = MAX(0, [self.collectionView numberOfItemsInSection:0] - 1);
+    NSIndexPath *finalIndexPath = [NSIndexPath indexPathForItem:finalRow inSection:0];
+    CGSize finalCellSize = [self.collectionView.collectionViewLayout sizeForItemAtIndexPath:finalIndexPath];
 
-    [self.collectionView scrollToItemAtIndexPath:indexPath
+    CGFloat maxHeightForVisibleMessage = CGRectGetHeight(self.collectionView.bounds) - self.collectionView.contentInset.top - CGRectGetHeight(self.inputToolbar.bounds);
+
+    UICollectionViewScrollPosition scrollPosition = (finalCellSize.height > maxHeightForVisibleMessage) ? UICollectionViewScrollPositionBottom : UICollectionViewScrollPositionTop;
+
+    [self.collectionView scrollToItemAtIndexPath:finalIndexPath
                                 atScrollPosition:scrollPosition
                                         animated:animated];
 }
@@ -480,7 +389,7 @@ JSQMessagesKeyboardControllerDelegate>
 {
     NSString *messageSenderId = [messageItem senderId];
     NSParameterAssert(messageSenderId != nil);
-
+    
     return [messageSenderId isEqualToString:self.senderId];
 }
 
@@ -540,7 +449,7 @@ JSQMessagesKeyboardControllerDelegate>
 {
     id<JSQMessageData> messageItem = [collectionView.dataSource collectionView:collectionView messageDataForItemAtIndexPath:indexPath];
     NSParameterAssert(messageItem != nil);
-
+    
     BOOL isOutgoingMessage = [self isOutgoingMessage:messageItem];
     BOOL isMediaMessage = [messageItem isMediaMessage];
 
@@ -620,27 +529,8 @@ JSQMessagesKeyboardControllerDelegate>
     cell.backgroundColor = [UIColor clearColor];
     cell.layer.rasterizationScale = [UIScreen mainScreen].scale;
     cell.layer.shouldRasterize = YES;
-    [self collectionView:collectionView accessibilityForCell:cell indexPath:indexPath message:messageItem];
 
     return cell;
-}
-
-- (void)collectionView:(JSQMessagesCollectionView *)collectionView
-  accessibilityForCell:(JSQMessagesCollectionViewCell*)cell
-             indexPath:(NSIndexPath *)indexPath
-               message:(id<JSQMessageData>)messageItem
-{
-    const BOOL isMediaMessage = [messageItem isMediaMessage];
-    cell.isAccessibilityElement = YES;
-    if (!isMediaMessage) {
-        cell.accessibilityLabel = [NSString stringWithFormat:[NSBundle jsq_localizedStringForKey:@"text_message_accessibility_label"],
-                                   [messageItem senderDisplayName],
-                                   [messageItem text]];
-    }
-    else {
-        cell.accessibilityLabel = [NSString stringWithFormat:[NSBundle jsq_localizedStringForKey:@"media_message_accessibility_label"],
-                                   [messageItem senderDisplayName]];
-    }
 }
 
 - (UICollectionReusableView *)collectionView:(JSQMessagesCollectionView *)collectionView
@@ -684,6 +574,11 @@ JSQMessagesKeyboardControllerDelegate>
     //  disable menu for media messages
     id<JSQMessageData> messageItem = [collectionView.dataSource collectionView:collectionView messageDataForItemAtIndexPath:indexPath];
     if ([messageItem isMediaMessage]) {
+        
+        if ([[messageItem media] respondsToSelector:@selector(mediaDataType)]) {
+            return YES;
+        }
+        
         return NO;
     }
 
@@ -711,8 +606,18 @@ JSQMessagesKeyboardControllerDelegate>
 - (void)collectionView:(JSQMessagesCollectionView *)collectionView performAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender
 {
     if (action == @selector(copy:)) {
-        id<JSQMessageData> messageData = [collectionView.dataSource collectionView:collectionView messageDataForItemAtIndexPath:indexPath];
-        [[UIPasteboard generalPasteboard] setString:[messageData text]];
+
+        id<JSQMessageData> messageData = [self collectionView:collectionView messageDataForItemAtIndexPath:indexPath];
+    
+        if ([messageData isMediaMessage]) {
+            id<JSQMessageMediaData> mediaData = [messageData media];
+            if ([messageData respondsToSelector:@selector(mediaDataType)]) {
+                [[UIPasteboard generalPasteboard] setValue:[mediaData mediaData]
+                                         forPasteboardType:[mediaData mediaDataType]];
+            }
+        } else {
+            [[UIPasteboard generalPasteboard] setString:[messageData text]];
+        }
     }
     else if (action == @selector(delete:)) {
         [collectionView.dataSource collectionView:collectionView didDeleteMessageAtIndexPath:indexPath];
@@ -839,7 +744,7 @@ JSQMessagesKeyboardControllerDelegate>
     }
 }
 
-- (void)didReceiveMenuWillShowNotification:(NSNotification *)notification
+- (void)jsq_didReceiveMenuWillShowNotification:(NSNotification *)notification
 {
     if (!self.selectedIndexPathForMenu) {
         return;
@@ -859,12 +764,12 @@ JSQMessagesKeyboardControllerDelegate>
     [menu setMenuVisible:YES animated:YES];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(didReceiveMenuWillShowNotification:)
+                                             selector:@selector(jsq_didReceiveMenuWillShowNotification:)
                                                  name:UIMenuControllerWillShowMenuNotification
                                                object:nil];
 }
 
-- (void)didReceiveMenuWillHideNotification:(NSNotification *)notification
+- (void)jsq_didReceiveMenuWillHideNotification:(NSNotification *)notification
 {
     if (!self.selectedIndexPathForMenu) {
         return;
@@ -904,13 +809,13 @@ JSQMessagesKeyboardControllerDelegate>
 
 - (void)keyboardController:(JSQMessagesKeyboardController *)keyboardController keyboardDidChangeFrame:(CGRect)keyboardFrame
 {
-    if (![self.inputToolbar.contentView.textView isFirstResponder] && self.toolbarBottomLayoutGuide.constant == 0.0) {
+    if (![self.inputToolbar.contentView.textView isFirstResponder] && self.toolbarBottomLayoutGuide.constant == 0.0f) {
         return;
     }
 
     CGFloat heightFromBottom = CGRectGetMaxY(self.collectionView.frame) - CGRectGetMinY(keyboardFrame);
 
-    heightFromBottom = MAX(0.0, heightFromBottom);
+    heightFromBottom = MAX(0.0f, heightFromBottom);
 
     [self jsq_setToolbarBottomLayoutGuideConstant:heightFromBottom];
 }
@@ -948,7 +853,7 @@ JSQMessagesKeyboardControllerDelegate>
                 [self.inputToolbar.contentView.textView resignFirstResponder];
                 [UIView animateWithDuration:0.0
                                  animations:^{
-                                     [self jsq_setToolbarBottomLayoutGuideConstant:0.0];
+                                     [self jsq_setToolbarBottomLayoutGuideConstant:0.0f];
                                  }];
 
                 UIView *snapshot = [self.view snapshotViewAfterScreenUpdates:YES];
@@ -1113,12 +1018,12 @@ JSQMessagesKeyboardControllerDelegate>
                                                    object:nil];
 
         [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(didReceiveMenuWillShowNotification:)
+                                                 selector:@selector(jsq_didReceiveMenuWillShowNotification:)
                                                      name:UIMenuControllerWillShowMenuNotification
                                                    object:nil];
 
         [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(didReceiveMenuWillHideNotification:)
+                                                 selector:@selector(jsq_didReceiveMenuWillHideNotification:)
                                                      name:UIMenuControllerWillHideMenuNotification
                                                    object:nil];
     }
@@ -1144,7 +1049,7 @@ JSQMessagesKeyboardControllerDelegate>
                                                            action:@selector(jsq_handleInteractivePopGestureRecognizer:)];
         self.currentInteractivePopGestureRecognizer = nil;
     }
-    
+
     if (addAction) {
         [self.navigationController.interactivePopGestureRecognizer addTarget:self
                                                                       action:@selector(jsq_handleInteractivePopGestureRecognizer:)];
