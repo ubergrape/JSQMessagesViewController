@@ -66,6 +66,7 @@ const CGFloat kJSQMessagesCollectionViewAvatarSizeDefault = 30.0f;
 - (void)jsq_removeNoLongerVisibleBehaviorsFromVisibleItemsIndexPaths:(NSSet *)visibleItemsIndexPaths;
 - (void)jsq_adjustSpringBehavior:(UIAttachmentBehavior *)springBehavior forTouchLocation:(CGPoint)touchLocation;
 
+
 @end
 
 
@@ -157,6 +158,7 @@ const CGFloat kJSQMessagesCollectionViewAvatarSizeDefault = 30.0f;
     
     [_visibleIndexPaths removeAllObjects];
     _visibleIndexPaths = nil;
+
 }
 
 #pragma mark - Setters
@@ -311,7 +313,7 @@ const CGFloat kJSQMessagesCollectionViewAvatarSizeDefault = 30.0f;
 
 - (NSArray *)layoutAttributesForElementsInRect:(CGRect)rect
 {
-    NSArray *attributesInRect = [super layoutAttributesForElementsInRect:rect];
+    NSArray *attributesInRect = [[super layoutAttributesForElementsInRect:rect] copy];
     
     if (self.springinessEnabled) {
         NSMutableArray *attributesInRectCopy = [attributesInRect mutableCopy];
@@ -332,7 +334,7 @@ const CGFloat kJSQMessagesCollectionViewAvatarSizeDefault = 30.0f;
             }
         }
         
-        attributesInRect = attributesInRectCopy;
+        attributesInRect = [attributesInRectCopy copy];
     }
     
     [attributesInRect enumerateObjectsUsingBlock:^(JSQMessagesCollectionViewLayoutAttributes *attributesItem, NSUInteger idx, BOOL *stop) {
