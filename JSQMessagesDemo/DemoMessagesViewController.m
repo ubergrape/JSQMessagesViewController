@@ -73,9 +73,8 @@
      *  Register custom menu actions for cells.
      */
     [JSQMessagesCollectionViewCell registerMenuAction:@selector(customAction:)];
-    [UIMenuController sharedMenuController].menuItems = @[ [[UIMenuItem alloc] initWithTitle:@"Custom Action"
-                                                                                      action:@selector(customAction:)] ];
 
+	
     /**
      *  OPT-IN: allow cells to be deleted
      */
@@ -116,6 +115,19 @@
      *  Note: this feature is mostly stable, but still experimental
      */
     self.collectionView.collectionViewLayout.springinessEnabled = [NSUserDefaults springinessSetting];
+}
+
+
+
+#pragma mark - Custom menu actions for cells
+
+- (void)didReceiveMenuWillShowNotification:(NSNotification *)notification
+{
+    /**
+     *  Display custom menu actions for cells.
+     */
+    UIMenuController *menu = [notification object];
+    menu.menuItems = @[ [[UIMenuItem alloc] initWithTitle:@"Custom Action" action:@selector(customAction:)] ];
 }
 
 
@@ -220,6 +232,18 @@
                 
                 newMediaData = videoItemCopy;
             }
+            else if ([copyMediaData isKindOfClass:[JSQAudioMediaItem class]]) {
+                JSQAudioMediaItem *audioItemCopy = [((JSQAudioMediaItem *)copyMediaData) copy];
+                audioItemCopy.appliesMediaViewMaskAsOutgoing = NO;
+                newMediaAttachmentCopy = [audioItemCopy.audioData copy];
+                
+                /**
+                 *  Reset audio item to simulate "downloading" the audio
+                 */
+                audioItemCopy.audioData = nil;
+                
+                newMediaData = audioItemCopy;
+            }
             else {
                 NSLog(@"%s error: unrecognized media item", __PRETTY_FUNCTION__);
             }
@@ -276,6 +300,10 @@
                     ((JSQVideoMediaItem *)newMediaData).isReadyToPlay = YES;
                     [self.collectionView reloadData];
                 }
+                else if ([newMediaData isKindOfClass:[JSQAudioMediaItem class]]) {
+                    ((JSQAudioMediaItem *)newMediaData).audioData = newMediaAttachmentCopy;
+                    [self.collectionView reloadData];
+                }
                 else {
                     NSLog(@"%s error: unrecognized media item", __PRETTY_FUNCTION__);
                 }
@@ -323,11 +351,13 @@
 
 - (void)didPressAccessoryButton:(UIButton *)sender
 {
+    [self.inputToolbar.contentView.textView resignFirstResponder];
+
     UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:@"Media messages"
                                                        delegate:self
                                               cancelButtonTitle:@"Cancel"
                                          destructiveButtonTitle:nil
-                                              otherButtonTitles:@"Send photo", @"Send location", @"Send video", nil];
+                                              otherButtonTitles:@"Send photo", @"Send location", @"Send video", @"Send audio", nil];
     
     [sheet showFromToolbar:self.inputToolbar];
 }
@@ -335,6 +365,7 @@
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
     if (buttonIndex == actionSheet.cancelButtonIndex) {
+        [self.inputToolbar.contentView.textView becomeFirstResponder];
         return;
     }
     
@@ -355,6 +386,10 @@
             
         case 2:
             [self.demoData addVideoMediaMessage];
+            break;
+            
+        case 3:
+            [self.demoData addAudioMediaMessage];
             break;
     }
     
