@@ -37,6 +37,7 @@ const CGFloat kJSQMessagesToolbarContentViewHorizontalSpacingDefault = 8.0f;
 // FOR EDIT MODE!
 @property (weak, nonatomic) IBOutlet UIButton *leftEditButton;
 @property (weak, nonatomic) IBOutlet UIButton *rightEditButton;
+@property (weak, nonatomic) IBOutlet UILabel *editModeTitleLabel;
 
 @end
 

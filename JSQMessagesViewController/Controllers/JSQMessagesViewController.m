@@ -469,6 +469,9 @@ JSQMessagesKeyboardControllerDelegate>
 }
 
 // For edit mode!
+CGFloat savedRightBarButtonWidthConstraintConstant = 50.0;
+CGFloat savedLeftBarButtonWidthConstraintConstant = 50.0;
+
 - (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)())completionBlock
 {
     
@@ -476,6 +479,12 @@ JSQMessagesKeyboardControllerDelegate>
     
     // Update layout after changing constraints (with animation)
     if (enabled) {
+        
+        // Save width of right / left bar button item (send button) to be able to reset it after leaving edit mode again
+        // The width can be different based on localisation
+        savedRightBarButtonWidthConstraintConstant = self.inputToolbar.contentView.rightBarButtonContainerViewWidthConstraint.constant;
+        savedLeftBarButtonWidthConstraintConstant = self.inputToolbar.contentView.leftBarButtonContainerViewWidthConstraint.constant;
+        
         [UIView animateWithDuration:0.1 animations:^{
             self.inputToolbar.contentView.rightBarButtonItem.alpha = 0.0;
             self.inputToolbar.contentView.leftBarButtonItem.alpha = 0.0;
@@ -504,8 +513,8 @@ JSQMessagesKeyboardControllerDelegate>
         }];
     } else {
         [UIView animateWithDuration:0.2 animations:^{
-            self.inputToolbar.contentView.leftBarButtonContainerViewWidthConstraint.constant = 25.0;
-            self.inputToolbar.contentView.rightBarButtonContainerViewWidthConstraint.constant = 50.0;
+            self.inputToolbar.contentView.leftBarButtonContainerViewWidthConstraint.constant = savedLeftBarButtonWidthConstraintConstant;
+            self.inputToolbar.contentView.rightBarButtonContainerViewWidthConstraint.constant = savedRightBarButtonWidthConstraintConstant;
             [UIView animateWithDuration:0.1 animations:^{
                 self.inputToolbar.contentView.editModeTitleBarHeightConstraint.constant = 0.0;
                 // Get the current height of the textView and calculate difference to normal height

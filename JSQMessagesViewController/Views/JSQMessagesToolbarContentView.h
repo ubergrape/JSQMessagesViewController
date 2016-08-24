@@ -114,6 +114,7 @@ FOUNDATION_EXPORT const CGFloat kJSQMessagesToolbarContentViewHorizontalSpacingD
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *editModeTitleBarHeightConstraint;
 @property (weak, nonatomic, readonly) UIButton *leftEditButton;
 @property (weak, nonatomic, readonly) UIButton *rightEditButton;
+@property (weak, nonatomic, readonly) IBOutlet UILabel *editModeTitleLabel;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *editModeTopTextViewConstraint;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *rightBarButtonContainerViewWidthConstraint;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *leftBarButtonContainerViewWidthConstraint;
