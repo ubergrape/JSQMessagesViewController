@@ -156,7 +156,7 @@ forSupplementaryViewOfKind:UICollectionElementKindSectionHeader
         return;
     }
 
-    [self.delegate collectionView:self didTapMessageBubbleAtIndexPath:indexPath];
+    [self.delegate collectionView:self didTapMessageBubbleAtIndexPath:indexPath withCell: cell];
 }
 
 - (void)messagesCollectionViewCellDidTapCell:(JSQMessagesCollectionViewCell *)cell atPosition:(CGPoint)position
