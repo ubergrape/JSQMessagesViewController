@@ -21,6 +21,7 @@
 #import "JSQMessagesCollectionViewFlowLayoutInvalidationContext.h"
 
 #import "JSQMessageData.h"
+#import "JSQMessageAttributedData.h"
 #import "JSQMessageBubbleImageDataSource.h"
 #import "JSQMessageAvatarImageDataSource.h"
 
@@ -432,6 +433,75 @@ static void JSQInstallWorkaroundForSheetPresentationIssue26295020(void) {
     return [messageSenderId isEqualToString:[self.collectionView.dataSource senderId]];
 }
 
+// For edit mode!
+CGFloat savedRightBarButtonWidthConstraintConstant = 50.0;
+CGFloat savedLeftBarButtonWidthConstraintConstant = 50.0;
+
+- (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)())completionBlock
+{
+    self.inputToolbar.contentView.textView.placeHolder = @"";
+    
+    // Update layout after changing constraints (with animation)
+    if (enabled) {
+        
+        // Save width of right / left bar button item (send button) to be able to reset it after leaving edit mode again
+        // The width can be different based on localisation
+        savedRightBarButtonWidthConstraintConstant = self.inputToolbar.contentView.rightBarButtonContainerViewWidthConstraint.constant;
+        savedLeftBarButtonWidthConstraintConstant = self.inputToolbar.contentView.leftBarButtonContainerViewWidthConstraint.constant;
+        
+        
+        [UIView animateWithDuration:0.1 animations:^{
+            self.inputToolbar.contentView.rightBarButtonItem.alpha = 0.0;
+            self.inputToolbar.contentView.leftBarButtonItem.alpha = 0.0;
+        } completion:^(BOOL finished) {
+            [UIView animateWithDuration:0.2 animations:^{
+                
+                self.inputToolbar.contentView.leftBarButtonContainerViewWidthConstraint.constant = 0.0;
+                self.inputToolbar.contentView.rightBarButtonContainerViewWidthConstraint.constant = 0.0;
+                
+                self.inputToolbar.contentView.editModeTitleBarHeightConstraint.constant = 30.0;
+                //self.toolbarHeightConstraint.constant = self.inputToolbar.contentView.textView.frame.size.height + 100;
+                // Trigger textViewContentSizeChange to get the input toolbar resized properly by height of edit mode toolbar
+                //[self jsq_adjustInputToolbarForComposerTextViewContentSizeChange:30];
+                [self jsq_updateCollectionViewInsets];
+                [self.inputToolbar.contentView layoutIfNeeded];
+                
+            } completion:^(BOOL finished) {
+                [UIView animateWithDuration:0.2 animations:^{
+                    self.inputToolbar.contentView.textView.placeHolder = @"...";
+                }completion:^(BOOL finished){
+                    //                    NSRange range = NSMakeRange(self.inputToolbar.contentView.textView.text.length - 1, 1);
+                    //                    [self.inputToolbar.contentView.textView scrollRangeToVisible:range];
+                    completionBlock();
+                }];
+            }];
+        }];
+    } else {
+        [UIView animateWithDuration:0.2 animations:^{
+            self.inputToolbar.contentView.leftBarButtonContainerViewWidthConstraint.constant = savedLeftBarButtonWidthConstraintConstant;
+            self.inputToolbar.contentView.rightBarButtonContainerViewWidthConstraint.constant = savedRightBarButtonWidthConstraintConstant;
+            [UIView animateWithDuration:0.1 animations:^{
+                self.inputToolbar.contentView.editModeTitleBarHeightConstraint.constant = 0.0;
+                // Get the current height of the textView and calculate difference to normal height
+                //CGFloat sizeChange = self.inputToolbar.frame.size.height - 44;
+                //[self jsq_adjustInputToolbarForComposerTextViewContentSizeChange:-sizeChange];
+                [self jsq_updateCollectionViewInsets];
+                [self.inputToolbar.contentView layoutIfNeeded];
+                
+            } completion:^(BOOL finished) {
+                [UIView animateWithDuration:0.2 animations:^{
+                    self.inputToolbar.contentView.rightBarButtonItem.alpha = 1.0;
+                    self.inputToolbar.contentView.leftBarButtonItem.alpha = 1.0;
+                    self.inputToolbar.contentView.textView.placeHolder = @"New Message";
+                    completionBlock();
+                }];
+            }];
+            
+        }];
+        
+    }
+}
+
 #pragma mark - JSQMessages collection view data source
 
 - (NSString *)senderDisplayName
@@ -517,7 +587,14 @@ static void JSQInstallWorkaroundForSheetPresentationIssue26295020(void) {
     cell.delegate = collectionView;
 
     if (!isMediaMessage) {
-        cell.textView.text = [messageItem text];
+        if ([messageItem conformsToProtocol:@protocol(JSQMessageAttributedData)]) {
+            id <JSQMessageAttributedData> attributedMessageItem =  (id <JSQMessageAttributedData>) messageItem;
+            cell.textView.attributedText = [attributedMessageItem attributedText];
+            
+        } else {
+            cell.textView.text = [messageItem text];
+        }
+        
         NSParameterAssert(cell.textView.text != nil);
 
         id<JSQMessageBubbleImageDataSource> bubbleImageDataSource = [collectionView.dataSource collectionView:collectionView messageBubbleImageDataForItemAtIndexPath:indexPath];
@@ -634,15 +711,17 @@ static void JSQInstallWorkaroundForSheetPresentationIssue26295020(void) {
 
 - (BOOL)collectionView:(JSQMessagesCollectionView *)collectionView shouldShowMenuForItemAtIndexPath:(NSIndexPath *)indexPath
 {
+    
+    // NO, actually we want to show the menu also for media messages!
     //  disable menu for media messages
-    id<JSQMessageData> messageItem = [collectionView.dataSource collectionView:collectionView messageDataForItemAtIndexPath:indexPath];
-    if ([messageItem isMediaMessage]) {
-
-        if ([[messageItem media] respondsToSelector:@selector(mediaDataType)]) {
-            return YES;
-        }
-        return NO;
-    }
+//    id<JSQMessageData> messageItem = [collectionView.dataSource collectionView:collectionView messageDataForItemAtIndexPath:indexPath];
+//    if ([messageItem isMediaMessage]) {
+//
+//        if ([[messageItem media] respondsToSelector:@selector(mediaDataType)]) {
+//            return YES;
+//        }
+//        return NO;
+//    }
 
     self.selectedIndexPathForMenu = indexPath;
 
@@ -691,8 +770,8 @@ static void JSQInstallWorkaroundForSheetPresentationIssue26295020(void) {
     else if (action == @selector(delete:)) {
         [collectionView.dataSource collectionView:collectionView didDeleteMessageAtIndexPath:indexPath];
 
-        [collectionView deleteItemsAtIndexPaths:@[indexPath]];
-        [collectionView.collectionViewLayout invalidateLayout];
+       // [collectionView deleteItemsAtIndexPaths:@[indexPath]];
+       // [collectionView.collectionViewLayout invalidateLayout];
     }
 }
 
@@ -726,7 +805,7 @@ static void JSQInstallWorkaroundForSheetPresentationIssue26295020(void) {
  didTapAvatarImageView:(UIImageView *)avatarImageView
            atIndexPath:(NSIndexPath *)indexPath { }
 
-- (void)collectionView:(JSQMessagesCollectionView *)collectionView didTapMessageBubbleAtIndexPath:(NSIndexPath *)indexPath { }
+- (void)collectionView:(JSQMessagesCollectionView *)collectionView didTapMessageBubbleAtIndexPath:(NSIndexPath *)indexPath withCell:(JSQMessagesCollectionViewCell *)cell { }
 
 - (void)collectionView:(JSQMessagesCollectionView *)collectionView
  didTapCellAtIndexPath:(NSIndexPath *)indexPath

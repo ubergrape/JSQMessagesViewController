@@ -25,9 +25,9 @@
  *  Initializes and returns a message object having the given senderId, displayName, text,
  *  and current system date.
  *
- *  @param senderId    The unique identifier for the user who sent the message. This value must not be `nil`.
- *  @param displayName The display name for the user who sent the message. This value must not be `nil`.
- *  @param text        The body text of the message. This value must not be `nil`.
+ *  @param senderId       The unique identifier for the user who sent the message. This value must not be `nil`.
+ *  @param displayName    The display name for the user who sent the message. This value must not be `nil`.
+ *  @param attributedText The body attributed text of the message. This value must not be `nil`.
  *
  *  @discussion Initializing a `JSQMessage` with this method will set `isMediaMessage` to `NO`.
  *
@@ -35,16 +35,16 @@
  */
 + (instancetype)messageWithSenderId:(NSString *)senderId
                         displayName:(NSString *)displayName
-                      attributedText:(NSAttributedString *) attributedText;
+                     attributedText:(NSAttributedString *) attributedText;
 
 
 /**
  *  Initializes and returns a message object having the given senderId, senderDisplayName, date, and text.
  *
- *  @param senderId          The unique identifier for the user who sent the message. This value must not be `nil`.
- *  @param senderDisplayName The display name for the user who sent the message. This value must not be `nil`.
- *  @param date              The date that the message was sent. This value must not be `nil`.
- *  @param text              The body text of the message. This value must not be `nil`.
+ *  @param senderId             The unique identifier for the user who sent the message. This value must not be `nil`.
+ *  @param senderDisplayName    The display name for the user who sent the message. This value must not be `nil`.
+ *  @param date                 The date that the message was sent. This value must not be `nil`.
+ *  @param attributedText       The body atributed text of the message. This value must not be `nil`.
  *
  *  @discussion Initializing a `JSQMessage` with this method will set `isMediaMessage` to `NO`.
  *
@@ -53,7 +53,7 @@
 - (instancetype)initWithSenderId:(NSString *)senderId
                senderDisplayName:(NSString *)senderDisplayName
                             date:(NSDate *)date
-                            attributedText:(NSAttributedString *) attributeText;
+                  attributedText:(NSAttributedString *) attributeText;
 
 
 

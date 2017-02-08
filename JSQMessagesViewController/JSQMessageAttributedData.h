@@ -11,7 +11,7 @@
 @protocol JSQMessageAttributedData <JSQMessageData>
 
 /**
- *  @return The body text of the message.
+ *  @return The body attributed text of the message.
  *
  *  @warning You must not return `nil` from this method.
  */

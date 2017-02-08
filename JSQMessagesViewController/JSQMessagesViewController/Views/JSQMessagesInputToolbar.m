@@ -46,7 +46,7 @@ static void * kJSQMessagesInputToolbarKeyValueObservingContext = &kJSQMessagesIn
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-
+    self.backgroundColor = [UIColor whiteColor];
     self.jsq_isObserving = NO;
     self.sendButtonLocation = JSQMessagesInputSendButtonLocationRight;
     self.enablesSendButtonAutomatically = YES;

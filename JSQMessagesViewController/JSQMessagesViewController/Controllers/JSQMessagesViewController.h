@@ -46,8 +46,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (strong, nonatomic, readonly) JSQMessagesInputToolbar *inputToolbar;
 
-
-
 /**
  *  Specifies whether or not the view controller should automatically scroll to the most recent message
  *  when the view appears and when sending, receiving, and composing a new message.
@@ -249,6 +247,11 @@ NS_ASSUME_NONNULL_BEGIN
  *  @param animated Pass `YES` if you want to animate scrolling, `NO` if it should be immediate.
  */
 - (void)scrollToBottomAnimated:(BOOL)animated;
+
+/**
+ *  Toggle message edit mode
+ */
+- (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)())completionBlock;
 
 /**
  * Used to decide if a message is incoming or outgoing.

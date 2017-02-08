@@ -44,10 +44,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface JSQMessagesComposerTextView : UITextView
 
-@property (nonatomic, weak) NSLayoutConstraint *heightConstraint;
-@property (nonatomic, weak) NSLayoutConstraint *minHeightConstraint;
-@property (nonatomic, weak) NSLayoutConstraint *maxHeightConstraint;
-
 /**
  *  The text to be displayed when the text view is empty. The default value is `nil`.
  */

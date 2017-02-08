@@ -28,13 +28,16 @@ const CGFloat kJSQMessagesToolbarContentViewHorizontalSpacingDefault = 8.0f;
 @property (weak, nonatomic) IBOutlet JSQMessagesComposerTextView *textView;
 
 @property (weak, nonatomic) IBOutlet UIView *leftBarButtonContainerView;
-@property (weak, nonatomic) IBOutlet NSLayoutConstraint *leftBarButtonContainerViewWidthConstraint;
 
 @property (weak, nonatomic) IBOutlet UIView *rightBarButtonContainerView;
-@property (weak, nonatomic) IBOutlet NSLayoutConstraint *rightBarButtonContainerViewWidthConstraint;
 
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *leftHorizontalSpacingConstraint;
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *rightHorizontalSpacingConstraint;
+
+// FOR EDIT MODE!
+@property (weak, nonatomic) IBOutlet UIButton *leftEditButton;
+@property (weak, nonatomic) IBOutlet UIButton *rightEditButton;
+@property (weak, nonatomic) IBOutlet UILabel *editModeTitleLabel;
 
 @end
 

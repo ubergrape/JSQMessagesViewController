@@ -15,12 +15,12 @@
 
 + (instancetype)messageWithSenderId:(NSString *)senderId
                         displayName:(NSString *)displayName
-                      attributedText:(NSAttributedString *) attributedText {
+                     attributedText:(NSAttributedString *) attributedText {
     
     return [[self alloc] initWithSenderId:senderId
-                              senderDisplayName:displayName
-                                           date:[NSDate date]
-                            attributedText:attributedText];
+                        senderDisplayName:displayName
+                                     date:[NSDate date]
+                           attributedText:attributedText];
     
 }
 
@@ -28,7 +28,7 @@
 - (instancetype)initWithSenderId:(NSString *)senderId
                senderDisplayName:(NSString *)senderDisplayName
                             date:(NSDate *)date
-                   attributedText:(NSAttributedString *) attributedText  {
+                  attributedText:(NSAttributedString *) attributedText  {
     
     NSParameterAssert(senderId != nil);
     NSParameterAssert(senderDisplayName != nil);
