@@ -111,17 +111,17 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-
+    
     [self setTranslatesAutoresizingMaskIntoConstraints:NO];
-
+    
     self.backgroundColor = [UIColor whiteColor];
-
+    
     self.cellTopLabelHeightConstraint.constant = 0.0f;
     self.messageBubbleTopLabelHeightConstraint.constant = 0.0f;
     self.cellBottomLabelHeightConstraint.constant = 0.0f;
-
+    
     self.avatarViewSize = CGSizeZero;
-
+    
     self.cellTopLabel.textAlignment = NSTextAlignmentCenter;
     self.cellTopLabel.font = [UIFont boldSystemFontOfSize:12.0f];
     self.cellTopLabel.textColor = [UIColor lightGrayColor];
@@ -131,13 +131,13 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
     self.cellTopLabel.layer.cornerRadius = self.cellTopLabel.frame.size.height / 2;
     self.cellTopLabel.layer.borderColor = [[[UIColor lightGrayColor] colorWithAlphaComponent: 0.5] CGColor];
     self.cellTopLabel.layer.borderWidth = 1.0f;
-
+    
     self.messageBubbleTopLabel.font = [UIFont systemFontOfSize:12.0f];
     self.messageBubbleTopLabel.textColor = [UIColor lightGrayColor];
-
+    
     self.cellBottomLabel.font = [UIFont systemFontOfSize:11.0f];
     self.cellBottomLabel.textColor = [UIColor lightGrayColor];
-
+    
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(jsq_handleTapGesture:)];
     [self addGestureRecognizer:tap];
     self.tapGestureRecognizer = tap;
@@ -146,17 +146,17 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)dealloc
 {
     _delegate = nil;
-
+    
     _cellTopLabel = nil;
     _messageBubbleTopLabel = nil;
     _cellBottomLabel = nil;
-
+    
     _textView = nil;
     _messageBubbleImageView = nil;
     _mediaView = nil;
-
+    
     _avatarImageView = nil;
-
+    
     [_tapGestureRecognizer removeTarget:nil action:NULL];
     _tapGestureRecognizer = nil;
 }
@@ -166,15 +166,15 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)prepareForReuse
 {
     [super prepareForReuse];
-
+    
     self.cellTopLabel.text = nil;
     self.messageBubbleTopLabel.text = nil;
     self.cellBottomLabel.text = nil;
-
+    
     self.textView.dataDetectorTypes = UIDataDetectorTypeNone;
     self.textView.text = nil;
     self.textView.attributedText = nil;
-
+    
     self.avatarImageView.image = nil;
     self.avatarImageView.highlightedImage = nil;
 }
@@ -187,31 +187,31 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)applyLayoutAttributes:(UICollectionViewLayoutAttributes *)layoutAttributes
 {
     [super applyLayoutAttributes:layoutAttributes];
-
+    
     JSQMessagesCollectionViewLayoutAttributes *customAttributes = (JSQMessagesCollectionViewLayoutAttributes *)layoutAttributes;
-
+    
     if (self.textView.font != customAttributes.messageBubbleFont) {
         self.textView.font = customAttributes.messageBubbleFont;
     }
-
+    
     if (!UIEdgeInsetsEqualToEdgeInsets(self.textView.textContainerInset, customAttributes.textViewTextContainerInsets)) {
         self.textView.textContainerInset = customAttributes.textViewTextContainerInsets;
     }
-
+    
     self.textViewFrameInsets = customAttributes.textViewFrameInsets;
-
+    
     [self jsq_updateConstraint:self.messageBubbleContainerWidthConstraint
                   withConstant:customAttributes.messageBubbleContainerViewWidth];
-
+    
     [self jsq_updateConstraint:self.cellTopLabelHeightConstraint
                   withConstant:customAttributes.cellTopLabelHeight];
-
+    
     [self jsq_updateConstraint:self.messageBubbleTopLabelHeightConstraint
                   withConstant:customAttributes.messageBubbleTopLabelHeight];
-
+    
     [self jsq_updateConstraint:self.cellBottomLabelHeightConstraint
                   withConstant:customAttributes.cellBottomLabelHeight];
-
+    
     if ([self isKindOfClass:[JSQMessagesCollectionViewCellIncoming class]]) {
         self.avatarViewSize = customAttributes.incomingAvatarViewSize;
     }
@@ -241,7 +241,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)setBounds:(CGRect)bounds
 {
     [super setBounds:bounds];
-
+    
     if ([UIDevice jsq_isCurrentDeviceBeforeiOS8]) {
         self.contentView.frame = bounds;
     }
@@ -268,7 +268,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
         }
         
         // Normal message? Show delete, edit and resend options only for own messages
-        if ([NSStringFromSelector(aSelector) isEqualToString:@"delete:"] || [NSStringFromSelector(aSelector) isEqualToString:@"edit:"] || [NSStringFromSelector(aSelector) isEqualToString:@"resendMessage:"]) {
+        if ([NSStringFromSelector(aSelector) isEqualToString:@"delete:"] || [NSStringFromSelector(aSelector) isEqualToString:@"editMessage:"] || [NSStringFromSelector(aSelector) isEqualToString:@"resendMessage:"]) {
             if ([self isKindOfClass:[JSQMessagesCollectionViewCellOutgoing class]]) {
                 return YES;
             } else {
@@ -304,7 +304,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
     if ([jsqMessagesCollectionViewCellActions containsObject:NSStringFromSelector(aSelector)]) {
         return [NSMethodSignature signatureWithObjCTypes:"v@:@"];
     }
-
+    
     return [super methodSignatureForSelector:aSelector];
 }
 
@@ -313,14 +313,14 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)setBackgroundColor:(UIColor *)backgroundColor
 {
     [super setBackgroundColor:backgroundColor];
-
+    
     //self.cellTopLabel.backgroundColor = backgroundColor;
     self.messageBubbleTopLabel.backgroundColor = backgroundColor;
     self.cellBottomLabel.backgroundColor = backgroundColor;
-
+    
     self.messageBubbleImageView.backgroundColor = backgroundColor;
     self.avatarImageView.backgroundColor = backgroundColor;
-
+    
     self.messageBubbleContainerView.backgroundColor = backgroundColor;
     self.avatarContainerView.backgroundColor = backgroundColor;
 }
@@ -330,7 +330,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
     if (CGSizeEqualToSize(avatarViewSize, self.avatarViewSize)) {
         return;
     }
-
+    
     [self jsq_updateConstraint:self.avatarContainerViewWidthConstraint withConstant:avatarViewSize.width];
     [self jsq_updateConstraint:self.avatarContainerViewHeightConstraint withConstant:avatarViewSize.height];
 }
@@ -340,7 +340,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
     if (UIEdgeInsetsEqualToEdgeInsets(textViewFrameInsets, self.textViewFrameInsets)) {
         return;
     }
-
+    
     [self jsq_updateConstraint:self.textViewTopVerticalSpaceConstraint withConstant:textViewFrameInsets.top];
     [self jsq_updateConstraint:self.textViewBottomVerticalSpaceConstraint withConstant:textViewFrameInsets.bottom];
     [self jsq_updateConstraint:self.textViewAvatarHorizontalSpaceConstraint withConstant:textViewFrameInsets.right];
@@ -351,14 +351,14 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 {
     [self.messageBubbleImageView removeFromSuperview];
     [self.textView removeFromSuperview];
-
+    
     [mediaView setTranslatesAutoresizingMaskIntoConstraints:NO];
     mediaView.frame = self.messageBubbleContainerView.bounds;
-
+    
     [self.messageBubbleContainerView addSubview:mediaView];
     [self.messageBubbleContainerView jsq_pinAllEdgesOfSubview:mediaView];
     _mediaView = mediaView;
-
+    
     //  because of cell re-use (and caching media views, if using built-in library media item)
     //  we may have dequeued a cell with a media view and add this one on top
     //  thus, remove any additional subviews hidden behind the new media view
@@ -394,7 +394,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
     if (constraint.constant == constant) {
         return;
     }
-
+    
     constraint.constant = constant;
 }
 
@@ -403,7 +403,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (void)jsq_handleTapGesture:(UITapGestureRecognizer *)tap
 {
     CGPoint touchPt = [tap locationInView:self];
-
+    
     if (CGRectContainsPoint(self.avatarContainerView.frame, touchPt)) {
         [self.delegate messagesCollectionViewCellDidTapAvatar:self];
     }
@@ -418,7 +418,7 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch
 {
     CGPoint touchPt = [touch locationInView:self];
-
+    
     if ([gestureRecognizer isKindOfClass:[UILongPressGestureRecognizer class]]) {
         return CGRectContainsPoint(self.messageBubbleContainerView.frame, touchPt);
     }
