@@ -142,7 +142,7 @@
 
 - (void)paste:(id)sender
 {
-    if (!self.JSQPasteDelegate || [self.JSQPasteDelegate composerTextView:self shouldPasteWithSender:sender]) {
+    if (!self.jsqPasteDelegate || [self.jsqPasteDelegate composerTextView:self shouldPasteWithSender:sender]) {
         [super paste:sender];
     }
 }
