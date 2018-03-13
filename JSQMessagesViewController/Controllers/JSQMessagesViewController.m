@@ -1133,8 +1133,21 @@ CGFloat savedLeftBarButtonWidthConstraintConstant = 50.0;
 - (void)jsq_setCollectionViewInsetsTopValue:(CGFloat)top bottomValue:(CGFloat)bottom
 {
     UIEdgeInsets insets = UIEdgeInsetsMake(top, 0.0f, bottom, 0.0f);
-    self.collectionView.contentInset = insets;
-    self.collectionView.scrollIndicatorInsets = insets;
+    
+    @try
+    {
+        self.collectionView.contentInset = insets;
+        self.collectionView.scrollIndicatorInsets = insets;
+    }
+    @catch (NSException *exception)
+    {
+        // Print exception information
+        NSLog( @"NSException caught" );
+        return;
+    }
+    @finally
+    {
+    }
 }
 
 - (BOOL)jsq_isMenuVisible

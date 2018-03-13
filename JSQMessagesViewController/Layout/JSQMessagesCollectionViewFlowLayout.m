@@ -92,7 +92,7 @@ const CGFloat kJSQMessagesCollectionViewAvatarSizeDefault = 30.0f;
     _messageBubbleFont = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
     
     if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        _messageBubbleLeftRightMargin = 240.0f;
+        _messageBubbleLeftRightMargin = 100.0f;
     }
     else {
         _messageBubbleLeftRightMargin = 50.0f;

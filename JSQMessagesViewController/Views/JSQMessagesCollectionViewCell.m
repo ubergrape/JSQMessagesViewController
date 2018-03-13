@@ -268,12 +268,15 @@ static NSMutableSet *jsqMessagesCollectionViewCellActions = nil;
         }
         
         // Normal message? Show delete, edit and resend options only for own messages
+        // Show quote option for all messages
         if ([NSStringFromSelector(aSelector) isEqualToString:@"delete:"] || [NSStringFromSelector(aSelector) isEqualToString:@"editMessage:"] || [NSStringFromSelector(aSelector) isEqualToString:@"resendMessage:"]) {
             if ([self isKindOfClass:[JSQMessagesCollectionViewCellOutgoing class]]) {
                 return YES;
             } else {
                 return NO;
             }
+        } else if ([NSStringFromSelector(aSelector) isEqualToString:@"quoteMessage:"]){
+            return YES;
         }
     }
     
