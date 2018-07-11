@@ -319,22 +319,6 @@ JSQMessagesKeyboardControllerDelegate>
     return UIInterfaceOrientationMaskAll;
 }
 
-- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-{
-    [super willRotateToInterfaceOrientation:toInterfaceOrientation duration:duration];
-    [self.collectionView.collectionViewLayout invalidateLayoutWithContext:[JSQMessagesCollectionViewFlowLayoutInvalidationContext context]];
-}
-
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
-{
-    [super didRotateFromInterfaceOrientation:fromInterfaceOrientation];
-    if (self.showTypingIndicator) {
-        self.showTypingIndicator = NO;
-        self.showTypingIndicator = YES;
-        [self.collectionView reloadData];
-    }
-}
-
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     [self jsq_resetLayoutAndCaches];
@@ -463,7 +447,7 @@ JSQMessagesKeyboardControllerDelegate>
 CGFloat savedRightBarButtonWidthConstraintConstant = 50.0;
 CGFloat savedLeftBarButtonWidthConstraintConstant = 50.0;
 
-- (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)())completionBlock
+- (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)(void))completionBlock
 {
     
     self.inputToolbar.contentView.textView.placeHolder = @"";

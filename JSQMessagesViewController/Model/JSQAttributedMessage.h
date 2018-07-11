@@ -54,7 +54,7 @@
  *  @param senderId             The unique identifier for the user who sent the message. This value must not be `nil`.
  *  @param senderDisplayName    The display name for the user who sent the message. This value must not be `nil`.
  *  @param date                 The date that the message was sent. This value must not be `nil`.
- *  @param attributedText       The body atributed text of the message. This value must not be `nil`.
+ *  @param attributeText        The body atributed text of the message. This value must not be `nil`.
  *
  *  @discussion Initializing a `JSQMessage` with this method will set `isMediaMessage` to `NO`.
  *

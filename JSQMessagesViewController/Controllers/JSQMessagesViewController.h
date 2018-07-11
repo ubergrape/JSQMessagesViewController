@@ -269,7 +269,7 @@
 - (void)scrollToBottomAnimated:(BOOL)animated;
 
 // FOR EDIT MODE
-- (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)())completionBlock;
+- (void)toggleEditMode:(BOOL)enabled withCompletionBlock:(void (^)(void))completionBlock;
 
 /**
  * Used to decide if a message is incoming or outgoing.
